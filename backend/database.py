@@ -3,7 +3,8 @@
 import sqlite3
 import os
 
-DB_PATH = "./civic_requests.db"
+# Vercel's filesystem is read-only; /tmp is the only writable location
+DB_PATH = "/tmp/civic_requests.db" if os.environ.get("VERCEL") else "./civic_requests.db"
 
 
 def init_db():
