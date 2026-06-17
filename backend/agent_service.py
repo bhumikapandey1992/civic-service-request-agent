@@ -8,10 +8,10 @@ def classify_request_agent(request_text: str) -> dict:
     """
     Classify a service request into category, priority, summary, action, and department.
 
-    Uses OpenAI gpt-3.5-turbo if OPENAI_API_KEY is set; otherwise applies
+    Uses Gemini gemini-2.0-flash if GEMINI_API_KEY is set; otherwise applies
     keyword-based rule logic as a fully offline fallback.
     """
-    api_key = os.environ.get("OPENAI_API_KEY")
+    api_key = os.environ.get("GEMINI_API_KEY")
 
     if api_key:
         return _classify_with_llm(request_text, api_key)
@@ -20,10 +20,11 @@ def classify_request_agent(request_text: str) -> dict:
 
 
 def _classify_with_llm(request_text: str, api_key: str) -> dict:
-    """Call OpenAI Chat Completions to classify the request."""
-    from openai import OpenAI
+    """Call Gemini to classify the request."""
+    from google import genai
+    from google.genai import types
 
-    client = OpenAI(api_key=api_key)
+    client = genai.Client(api_key=api_key)
 
     system_prompt = (
         "You are a civic service request triage agent for the City of Los Angeles.\n"
@@ -37,17 +38,22 @@ def _classify_with_llm(request_text: str, api_key: str) -> dict:
         "Do not include any text outside the JSON object."
     )
 
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": request_text},
-        ],
-        temperature=0.2,
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=request_text,
+        config=types.GenerateContentConfig(
+            system_instruction=system_prompt,
+            temperature=0.2,
+        ),
     )
 
-    raw = response.choices[0].message.content.strip()
-    return json.loads(raw)
+    raw = response.text.strip()
+    # Strip markdown code fences if Gemini wraps the JSON
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    return json.loads(raw.strip())
 
 
 def _classify_with_rules(request_text: str) -> dict:
