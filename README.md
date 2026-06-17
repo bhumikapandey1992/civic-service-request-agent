@@ -1,17 +1,17 @@
 # Agentic Civic Service Request Triage System
 
-An AI-powered triage system for the City of Los Angeles — Department of General Services that automatically classifies, prioritizes, summarizes, and routes incoming service requests.
+An AI-powered triage system for the City of Los Angeles — Department of General Services that automatically classifies, prioritizes, summarizes, and routes incoming service requests using Google Gemini.
 
 ## Tech Stack
 
-- **Backend:** Python 3.11+, FastAPI, SQLite (raw sqlite3), Pydantic v2
-- **AI/Agent:** OpenAI gpt-3.5-turbo (optional) + rule-based keyword fallback
+- **Backend:** Python 3.9+, FastAPI, SQLite (raw sqlite3), Pydantic v2
+- **AI/Agent:** Google Gemini 2.5 Flash + rule-based keyword fallback
 - **Frontend:** React 18, Vite 5
 - **Styling:** Inline styles only (no CSS framework)
 
 ## Prerequisites
 
-- Python 3.11+
+- Python 3.9+
 - Node.js 18+
 - pip and npm
 
@@ -33,6 +33,16 @@ cd civic-service-request-agent/frontend
 
 npm install
 ```
+
+## Environment Variables
+
+Copy `.env.example` to `backend/.env` and add your Gemini API key:
+
+```
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+Get a free API key from [Google AI Studio](https://aistudio.google.com/apikey). The key is loaded automatically when the backend starts — no extra export step needed.
 
 ## Running the Application
 
@@ -56,35 +66,17 @@ npm run dev
 - UI: [http://localhost:5173](http://localhost:5173)
 - API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-## Environment Variables
-
-Copy `.env.example` to `.env` in the project root and fill in values:
-
-```
-OPENAI_API_KEY=sk-...   # Optional
-```
-
-Load it before starting the server:
-
-```bash
-export $(cat .env | xargs) && uvicorn main:app --reload
-```
-
-Or use `python-dotenv` (already in requirements) — place `.env` in the `backend/` directory and it will be picked up automatically if you add `load_dotenv()` to `main.py`.
-
 ## Works Without an API Key
 
-If `OPENAI_API_KEY` is not set, the system falls back to a deterministic keyword-matching
-algorithm that covers all six categories and four priority levels. No network calls are made
-and no API costs are incurred.
+If `GEMINI_API_KEY` is not set (or the API call fails), the system falls back to a deterministic keyword-matching algorithm that covers all six categories and four priority levels. No network calls are made and no API costs are incurred.
 
 ## API Summary
 
-| Method | Endpoint               | Description                      |
-|--------|------------------------|----------------------------------|
-| GET    | /health                | Liveness check                   |
-| POST   | /api/requests          | Submit and classify a request    |
-| GET    | /api/requests          | List all requests (filterable)   |
-| GET    | /api/requests/{id}     | Get a single request by ID       |
+| Method | Endpoint           | Description                    |
+|--------|--------------------|--------------------------------|
+| GET    | /health            | Liveness check                 |
+| POST   | /api/requests      | Submit and classify a request  |
+| GET    | /api/requests      | List all requests (filterable) |
+| GET    | /api/requests/{id} | Get a single request by ID     |
 
 Full interactive documentation at `http://localhost:8000/docs`.
