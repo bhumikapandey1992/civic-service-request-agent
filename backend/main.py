@@ -1,6 +1,10 @@
 """FastAPI application entry point for the Civic Service Request Triage API."""
 
+import os
 from contextlib import asynccontextmanager
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware

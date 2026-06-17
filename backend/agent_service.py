@@ -3,6 +3,15 @@
 import os
 import json
 
+DEPARTMENT_MAP = {
+    "Facility Maintenance": "Building & Facility Operations",
+    "Public Works": "Bureau of Street Services",
+    "Procurement": "Procurement & Contract Services",
+    "IT Support": "Information Technology Agency",
+    "Safety Issue": "Environmental Health & Safety",
+    "General Inquiry": "General Administration",
+}
+
 
 def classify_request_agent(request_text: str) -> dict:
     """
@@ -14,9 +23,15 @@ def classify_request_agent(request_text: str) -> dict:
     api_key = os.environ.get("GEMINI_API_KEY")
 
     if api_key:
-        return _classify_with_llm(request_text, api_key)
+        try:
+            result = _classify_with_llm(request_text, api_key)
+        except Exception:
+            result = _classify_with_rules(request_text)
     else:
-        return _classify_with_rules(request_text)
+        result = _classify_with_rules(request_text)
+
+    result["department"] = DEPARTMENT_MAP.get(result["category"], "General Administration")
+    return result
 
 
 def _classify_with_llm(request_text: str, api_key: str) -> dict:
@@ -39,7 +54,7 @@ def _classify_with_llm(request_text: str, api_key: str) -> dict:
     )
 
     response = client.models.generate_content(
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         contents=request_text,
         config=types.GenerateContentConfig(
             system_instruction=system_prompt,
@@ -90,15 +105,6 @@ def _classify_with_rules(request_text: str) -> dict:
         "Low": ["inquiry", "question", "information", "general"],
     }
 
-    department_map = {
-        "Facility Maintenance": "Building & Facility Operations",
-        "Public Works": "Bureau of Street Services",
-        "Procurement": "Procurement & Contract Services",
-        "IT Support": "Information Technology Agency",
-        "Safety Issue": "Environmental Health & Safety",
-        "General Inquiry": "General Administration",
-    }
-
     action_map = {
         "Facility Maintenance": "Create a facility maintenance work order and notify the building operations team.",
         "Public Works": "Log a public works ticket and dispatch field inspection crew.",
@@ -122,14 +128,10 @@ def _classify_with_rules(request_text: str) -> dict:
             priority = pri
             break
 
-    summary = f"Service request submitted regarding: {request_text[:80]}..."
-    recommended_action = action_map[category]
-    department = department_map[category]
-
     return {
         "category": category,
         "priority": priority,
-        "summary": summary,
-        "recommended_action": recommended_action,
-        "department": department,
+        "summary": f"Service request submitted regarding: {request_text[:80]}...",
+        "recommended_action": action_map[category],
+        "department": DEPARTMENT_MAP[category],
     }
